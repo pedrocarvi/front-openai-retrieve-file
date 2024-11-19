@@ -1,24 +1,22 @@
-// Agregar url base de los endpoints de la API. En este caso, levanto la api en el puerto 5001 del localhost.
-const API_URL = "http://localhost:5001";
+import apiClient from "../axiosConfig";
 
+// Envio mensaje y el mismo endpoint me devuelve la respuesta a la pregunta.
 export const sendMessageToAssistant = async (message) => {
   try {
-    const response = await fetch(`${API_URL}/chat`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ question: message })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Error sending message to assistant: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data;
+    const response = await apiClient.post('/chat', {question: message})
+    return response.data;
   } catch (error) {
     console.error("Error sending message to assistant:", error);
     throw error;
   }
 };
+
+export const getUserConversations = async () => {
+  try {
+    const response = await apiClient.get("/threads");
+    return response.data
+  } catch (error) {
+    console.error("Error fetching user conversations:", error);
+    throw error;    
+  }
+}

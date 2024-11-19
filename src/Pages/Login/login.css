@@ -1,0 +1,37 @@
+.login-subcontainer {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.login-subcontainer .form-container form {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+}
+
+.login-subcontainer .form-container form input {
+    width: 260px;
+    padding: 8px 16px;
+}
+
+.login-subcontainer .form-container form button {
+    padding: 12px 24px;
+    border-radius: 8px;
+    background-color: #00986B;
+    color: white;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.login-subcontainer .form-container form p {
+    font-size: 12px;
+    color: red;
+}
+
