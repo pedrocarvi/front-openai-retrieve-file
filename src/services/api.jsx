@@ -1,9 +1,9 @@
 import apiClient from "../axiosConfig";
 
 // Envio mensaje y el mismo endpoint me devuelve la respuesta a la pregunta.
-export const sendMessageToAssistant = async (message) => {
+export const sendMessageToAssistant = async (message, chatId) => {
   try {
-    const response = await apiClient.post('/chat', {question: message})
+    const response = await apiClient.post('/chat', { question: message, chatId: chatId });
     return response.data;
   } catch (error) {
     console.error("Error sending message to assistant:", error);
@@ -11,12 +11,32 @@ export const sendMessageToAssistant = async (message) => {
   }
 };
 
-export const getUserConversations = async () => {
+export const startNewChat = async () => {
   try {
-    const response = await apiClient.get("/threads");
-    return response.data
+    const response = await apiClient.post('/chats');
+    return response.data;
   } catch (error) {
-    console.error("Error fetching user conversations:", error);
-    throw error;    
+    console.error("Error starting new chat:", error);
+    throw error;
+  }
+};
+
+export const fetchChats = async () => {
+  try {
+    const response = await apiClient.get('/chats');
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching chats:", error);
+    throw error;
+  }
+};
+
+export const deleteChat = async(chatId) => {
+  try {
+    const response = await apiClient.delete(`/chats/${chatId}`);
+    return response.data;
+  } catch (error){
+    console.error("Error fetching chats:", error);
+    throw error;
   }
 }

@@ -6,29 +6,34 @@ import './login.css';
 // Funciones
 import { useNavigate } from "react-router-dom";
 import apiClient from "../../axiosConfig";
+import LoaderAllScreen from "../../components/LoaderAllScreen/LoaderAllScreen";
 
 const Login = () => {
     const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [message, setMessage] = useState('');
+    const [loadingAllScreen, setLoadingAllScreen] = useState(false);
 
     // TODO: Agregar un loader
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setLoadingAllScreen(true);
         try {
             const response = await apiClient.post('/login', { email, password });
-            console.log(response);
             localStorage.setItem('token', response.data.token);
+            setLoadingAllScreen(false);
             navigate('/chat');
             setMessage('Inicio de sesión exitoso. Token almacenado.');
         } catch (error) {
             setMessage(error.response?.data?.error || 'Error al iniciar sesión');
+            setLoadingAllScreen(false);
         }
     };
 
     return (
         <div>
+            { loadingAllScreen ? <LoaderAllScreen/> : ''}
             <div className="login-subcontainer">
                 <div className="form-container">
                     <form onSubmit={handleSubmit}>
@@ -51,6 +56,7 @@ const Login = () => {
                     </form>
                 </div>
             </div>
+
         </div>
     );
 };
