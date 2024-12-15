@@ -305,6 +305,80 @@ const Chat = () => {
       setLoadingAllScreen(false);
     }
   };
+
+  // ******************************************************************************************
+  // Enviar mensaje y reproducir respuesta en audio
+  // ******************************************************************************************
+  const sendMessageWithAudioStream = async () => {
+    if (!currentChat || inputValue.trim() === "") return;
+  
+    setMessages([
+      ...messages,
+      { type: "user", text: [{ type: "text", content: inputValue }] },
+    ]);
+    setInputValue("");
+    setIsTyping(true);
+  
+    try {
+      const response = await fetch("http://localhost:5001/chat/audio", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          question: inputValue,
+          chatId: currentChat.id,
+        }),
+      });
+  
+      if (!response.body) {
+        throw new Error("No se recibió respuesta del servidor.");
+      }
+  
+      // Configuración de MediaSource para streaming de audio
+      const mediaSource = new MediaSource();
+      const audio = new Audio();
+      audio.src = URL.createObjectURL(mediaSource);
+      audio.play();
+  
+      mediaSource.addEventListener("sourceopen", async () => {
+        const sourceBuffer = mediaSource.addSourceBuffer("audio/mpeg");
+  
+        const reader = response.body.getReader();
+        let done = false;
+  
+        // Agregar los chunks de audio al SourceBuffer
+        while (!done) {
+          const { value, done: readerDone } = await reader.read();
+          if (value) {
+            // Esperar a que SourceBuffer termine de actualizar
+            await new Promise((resolve) => {
+              const onUpdateEnd = () => {
+                sourceBuffer.removeEventListener("updateend", onUpdateEnd);
+                resolve();
+              };
+              sourceBuffer.addEventListener("updateend", onUpdateEnd);
+              sourceBuffer.appendBuffer(value);
+            });
+          }
+          done = readerDone;
+        }
+  
+        // Llamar a endOfStream después de que se hayan procesado todos los datos
+        sourceBuffer.addEventListener("updateend", () => {
+          if (mediaSource.readyState === "open") {
+            mediaSource.endOfStream();
+          }
+        });
+      });
+  
+      setIsTyping(false);
+    } catch (error) {
+      console.error("Error en streaming de audio:", error);
+      setIsTyping(false);
+    }
+  };
   
   // ******************************************************************************************
   // Logout del usuario
@@ -403,7 +477,7 @@ const Chat = () => {
           <button onClick={sendMessage} disabled={!currentChat}> Enviar </button>
         </form> */}
 
-        <VoiceInputChat setInputValue={handleInputChange} sendMessage={sendMessage} />
+        <VoiceInputChat setInputValue={handleInputChange} sendMessage={sendMessageWithAudioStream} />
         
       </div>
     </div>
