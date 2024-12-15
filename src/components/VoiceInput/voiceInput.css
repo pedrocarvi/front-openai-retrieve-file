@@ -1,0 +1,14 @@
+.voice-input-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 50px;
+    border: none;
+    outline: none;
+    background-color: black;
+    color: white;
+    cursor: pointer;
+}
+
+.voice-input-btn:hover {
+    background-color: #202020;
+}

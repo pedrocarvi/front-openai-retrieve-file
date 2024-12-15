@@ -6,6 +6,8 @@ import { useNavigate } from "react-router-dom";
 import TrashIcon from '../../assets/trash.png';
 import LoaderAllScreen from "../LoaderAllScreen/LoaderAllScreen";
 import Loader from "../Loader/Loader";
+import VoiceInputChat from "../VoiceInput/VoiceInput";
+import { ElevenLabsClient } from "elevenlabs";
 
 const Chat = () => {
   const navigate = useNavigate();
@@ -16,7 +18,64 @@ const Chat = () => {
   const [currentChat, setCurrentChat] = useState(null);
   const [loading, setLoading] = useState(false);
   const [loadingAllScreen, setLoadingAllScreen] = useState(false);
+  const [isToggled, setIsToggled] = useState(false);
 
+  // ******************************************************************************************
+  // Tranformo response de la api de openAI de texto a speech con ElevenLabs (falta trabajarlo)
+  // ******************************************************************************************
+  // const speakTextWithElevenLabs = async (text) => {
+  //  const client = new ElevenLabsClient({ apiKey: "" });
+  //   try {
+  //     const audioResponse = await client.textToSpeech.convert("JBFqnCBsd6RMkjVDRZzb", {
+  //       output_format: "mp3_44100_128",  // Formato de salida
+  //       text: text,  // El texto que quieres convertir en voz
+  //       model_id: "eleven_multilingual_v2",  // Modelo que deseas usar
+  //     });
+
+  //     // Verifica si audioResponse tiene un ReadableStream
+  //     if (audioResponse.readableStream) {
+  //       const reader = audioResponse.readableStream.getReader();
+  //       const chunks = [];
+
+  //       // Lee el flujo y almacena los fragmentos
+  //       let done, value;
+  //       while ({ done, value } = await reader.read()) {
+  //         if (done) break;
+  //         chunks.push(value);
+  //       }
+
+  //       // Combina los fragmentos en un solo Uint8Array
+  //       const audioBuffer = new Uint8Array(chunks.flat());
+
+  //       // Crea un Blob con el tipo adecuado
+  //       const audioBlob = new Blob([audioBuffer], { type: "audio/mp3" });
+
+  //       // Crea una URL de objeto para poder reproducir el audio
+  //       const audioUrl = URL.createObjectURL(audioBlob);
+
+  //       // Crear un elemento de audio y reproducirlo
+  //       const audio = new Audio(audioUrl);
+  //       audio.play();
+  //     } else {
+  //       console.error("No se recibió un flujo de audio en la respuesta de ElevenLabs.");
+  //     }
+  //   } catch (error) {
+  //     console.error("Error al convertir el texto a voz:", error);
+  //   }
+  // };
+
+  // ******************************************************************************************
+  // Imprimo el chat seleccionado - Hay un problema que no toma bien el chat cuando se crea uno nuevo
+  // ******************************************************************************************
+  // useEffect(() => {
+  //   if (currentChat) {
+  //     console.log("Chat actual seleccionado:", currentChat);
+  //   }
+  // }, [currentChat]);
+
+  // ******************************************************************************************
+  // Me traigo los chats pasados del usuario
+  // ******************************************************************************************
   useEffect(() => {
     const getChats = async () => {
       setLoading(true);
@@ -37,8 +96,10 @@ const Chat = () => {
     getChats();
   }, []);
   
+  // ******************************************************************************************
+  // Selecciono chat pasado 
+  // ******************************************************************************************
   const handleChatSelection = async (chat) => {
-    // Verifica que el chat sea valido
     if (!chat) {
       console.error("Selected chat is undefined or null");
       return;
@@ -81,21 +142,30 @@ const Chat = () => {
     }
   };
 
+  // ******************************************************************************************
+  // Comienza un nuevo chat
+  // ******************************************************************************************
   const handleStartNewChat = async () => {
     setLoading(true);
     try {
       const newChat = await startNewChat();
       setChatSessions((prevSessions) => [...prevSessions, newChat.newChat]);
-      setCurrentChat(newChat.newChat);
-      setMessages([]); 
+      setMessages([]);
+      
+      setCurrentChat(newChat.newChat, () => {
+        console.log("Nuevo chat seleccionado:", newChat.newChat);
+      });
+  
       setLoading(false); 
     } catch (error) {
       console.error("Error starting new chat:", error);
       setLoading(false);
     }
   };
-
-  // Para las respuestas que tienen codigo, Transforma el texto en codigo
+  
+  // ******************************************************************************************
+  // Para las respuestas que tienen codigo, Transforma el texto en codigo - EN DESUSO
+  // ******************************************************************************************
   function parseMessageContent(text) {
     const regex = /```(\w+)?\n([\s\S]*?)```/g; 
     const parts = [];
@@ -121,40 +191,96 @@ const Chat = () => {
     return parts;
   }
 
-  // Envia prompt
-  const sendMessage = async (event) => {
-    event.preventDefault();
-    if (inputValue.trim() === "" || !currentChat) return;
+  // ******************************************************************************************
+  // Envia prompt en formato texto - EN DESUSO
+  // ******************************************************************************************
+  // const sendMessage = async () => {
+  //   if (inputValue.trim() === "" || !currentChat) {
+  //     console.error("No current chat or empty input value.");
+  //     return;
+  //   }
+  
+  //   setMessages([
+  //       ...messages,
+  //       { type: "user", text: [{ type: "text", content: inputValue }] },
+  //   ]);
+  //   setInputValue("");
+  //   setIsTyping(true);
+  
+  //   try {
+  //       const response = await sendMessageToAssistant(inputValue, currentChat.id, isToggled);
+  //       setMessages((prevMessages) => [
+  //           ...prevMessages,
+  //           { type: "ai", text: parseMessageContent(response.response) },
+  //       ]);
+  //       setIsTyping(false);
+  //   } catch (error) {
+  //       console.error("Error in sending message:", error);
+  //       setIsTyping(false);
+  //   }
+  // };
 
+  // ******************************************************************************************
+  // Envia prompt en audio y texto
+  // ******************************************************************************************
+  const sendMessage = async () => {
+    if (!currentChat || inputValue.trim() === "") return;
+  
     setMessages([
       ...messages,
       { type: "user", text: [{ type: "text", content: inputValue }] },
     ]);
     setInputValue("");
     setIsTyping(true);
-
+  
     try {
-      const response = await sendMessageToAssistant(inputValue, currentChat.id);
+      const response = await sendMessageToAssistant(inputValue, currentChat.id, isToggled);
+      const aiResponse = response.response;  // La respuesta de la IA
+  
+      // Mostrar la respuesta en el chat
       setMessages((prevMessages) => [
         ...prevMessages,
-        { type: "ai", text: parseMessageContent(response.response) },
+        { type: "ai", text: parseMessageContent(aiResponse) },
       ]);
+  
+      // Convertir la respuesta de la IA a audio usando ElevenLabs
+      // await speakTextWithElevenLabs(aiResponse);
+  
       setIsTyping(false);
     } catch (error) {
       console.error("Error in sending message:", error);
       setIsTyping(false);
     }
+  };  
+  
+  // ******************************************************************************************
+  // Envia prompt al hacer enter - EN DESUSO
+  // ******************************************************************************************  
+  // const handleKeyDown = (event) => {
+  //   if (event.key === "Enter" && !event.shiftKey) {
+  //     event.preventDefault();
+  //     sendMessage(event);
+  //   }
+  // };
+
+  // ******************************************************************************************
+  // Manejo el audio que me llega del componente VoiceInputChat - capta y setea el valor del audio en texto
+  // ******************************************************************************************
+  const handleInputChange = (value) => {
+    // console.log("Valor actualizado:", value); 
+    setInputValue(value);
   };
 
-  // Envia prompt al apretar la tecla enter
-  const handleKeyDown = (event) => {
-    if (event.key === "Enter" && !event.shiftKey) {
-      event.preventDefault();
-      sendMessage(event);
-    }
+  // ******************************************************************************************
+  // Si el toggle esta activado, guardo el chat, sino no.
+  // ******************************************************************************************
+  const handleToggle = () => {
+    setIsToggled(!isToggled);
   };
 
-  // Elimina 
+  // ******************************************************************************************
+  // Elimino un chat
+  // ******************************************************************************************  
   const handleDelete = async (chatId) => {
     if (chatId) {
       setLoadingAllScreen(true)
@@ -180,7 +306,9 @@ const Chat = () => {
     }
   };
   
+  // ******************************************************************************************
   // Logout del usuario
+  // ****************************************************************************************** 
   const handleLogout = () => {
     setLoadingAllScreen(true);
     localStorage.removeItem("token");
@@ -188,6 +316,9 @@ const Chat = () => {
     navigate("/");
   };
 
+  // ******************************************************************************************
+  // FRONT
+  // ******************************************************************************************
   return (
     <div className="chat-container">
       {loadingAllScreen ? <LoaderAllScreen/> : ''}
@@ -211,7 +342,7 @@ const Chat = () => {
             <div className="chats-conversations">
               {
                 chatSessions.slice().reverse().map(chat => (
-                  <div className="chat-conversation">
+                  <div key={chat.id} className="chat-conversation">
                     <button
                       key={chat.id}
                       onClick={() => handleChatSelection(chat)}
@@ -253,7 +384,16 @@ const Chat = () => {
             </div>
           )}
         </div>
-        <form onSubmit={sendMessage} className="chat-form">
+
+        <div className="toggle-container">
+          <span className="toggle-label"> Guardar conversación </span>
+          <div  className={`toggle-switch ${isToggled ? 'active' : ''}`}  onClick={handleToggle}>
+            <div className="toggle-knob"></div>
+          </div>
+        </div>
+
+        {/* Como se enviaba la prompt en fprmato texto antes  */}
+        {/* <form onSubmit={sendMessage} className="chat-form">
           <textarea
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
@@ -261,7 +401,10 @@ const Chat = () => {
             placeholder="Enviar un mensaje al asistente"
           />
           <button onClick={sendMessage} disabled={!currentChat}> Enviar </button>
-        </form>
+        </form> */}
+
+        <VoiceInputChat setInputValue={handleInputChange} sendMessage={sendMessage} />
+        
       </div>
     </div>
   );

@@ -1,9 +1,10 @@
 import apiClient from "../axiosConfig";
 
 // Envio mensaje y el mismo endpoint me devuelve la respuesta a la pregunta.
-export const sendMessageToAssistant = async (message, chatId) => {
+export const sendMessageToAssistant = async (message, chatId, isToggled) => {
+  // console.log("Guarda chat? ", isToggled)
   try {
-    const response = await apiClient.post('/chat', { question: message, chatId: chatId });
+    const response = await apiClient.post('/chat', { question: message, chatId: chatId, saveThread: isToggled });
     return response.data;
   } catch (error) {
     console.error("Error sending message to assistant:", error);
