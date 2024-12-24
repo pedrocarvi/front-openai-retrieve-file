@@ -1,4 +1,4 @@
-@keyframes ripple {
+/* @keyframes ripple {
     0% {
       transform: translate(-50%, -50%) scale(1);
       opacity: 1;
@@ -20,4 +20,62 @@
     }
   }
   
+   */
+
+   .siri-container {
+    position: relative;
+    width: 80px;   /* Ajusta el tamaño global a tu gusto */
+    height: 80px;
+    margin: 0 auto;
+  }
+  
+  /* Círculo estático siempre visible */
+  .siri-circle-base {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 20px;  
+    height: 20px;
+    margin-left: -10px;
+    margin-top: -10px;
+    border-radius: 50%;
+    background-color: #15A9BB; /* El color base */
+    opacity: 0.7;             /* Leve transparencia si gustas */
+  }
+  
+  /* Cada 'wave' es un círculo que se expande y desvanece */
+  .siri-wave {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 20px;
+    height: 20px;
+    margin-left: -10px; 
+    margin-top: -10px;
+    border-radius: 50%;
+    border: 2px solid #15A9BB; 
+    animation: siriRipple 1.5s infinite ease-out;
+  }
+  
+  /* Tres ondas con retrasos distintos */
+  .siri-wave1 {
+    animation-delay: 0s;
+  }
+  .siri-wave2 {
+    animation-delay: 0.5s;
+  }
+  .siri-wave3 {
+    animation-delay: 1s;
+  }
+  
+  @keyframes siriRipple {
+    0% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(2.5);
+      opacity: 0;
+    }
+  }
   

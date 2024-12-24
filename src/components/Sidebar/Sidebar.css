@@ -1,0 +1,229 @@
+.sidebar-container {
+    width: 300px;
+    min-width: 300px;
+    border-right: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 0px 20px;
+    position: sticky;
+    top: 0px;
+    display: flex;
+    flex-direction: column;
+    padding: 0px 20px 20px 20px;   
+}
+
+.logo-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: start;
+    gap: 20px;
+    padding: 20px 0px;
+}
+
+.logo-container a {
+    text-decoration: none;
+    color: black;
+}
+  
+.logo-container p {
+    font-size: 12px;
+}
+
+.new-chat-container {
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+}
+
+.new-chat-container button {
+    min-width: 120px;
+    padding: 10px 24px;
+    background-color: #15A9BB;
+    color: white;
+    border: none;
+    outline: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all ease-in-out 200ms;
+}
+
+.new-chat-container button:hover {
+    background-color: #21B8D2;
+}
+
+.chats-container {
+    padding: 30px 0px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    flex-grow: 1;
+}
+
+.chats-container span {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    font-weight: 300;
+    color: rgba(0, 0, 0, 0.8);
+}
+
+.chats-container a {
+    text-decoration: none;
+    color: #303030;
+}
+  
+.chats-container .chats-loader-ctn {
+    width: 100%;
+    margin-top: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.chats-container .chats-conversations {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: start;
+    gap: 16px;
+}
+
+.chats-container .chats-conversations .chat-conversation {
+    display: flex;
+    gap: 8px;
+    justify-content: space-around;
+    align-items: center;
+    width: 100%;
+}
+
+.chats-container .chats-conversations .chat-conversation button {
+    cursor: pointer;
+    border-radius: 6px;
+    padding: 5px;
+    border: none;
+}
+
+.chats-container .chats-conversations  .chat-conversation button:hover {
+    background-color: rgb(255, 241, 241);
+}
+
+.chats-container .chats-conversations  .chat-conversation a  {
+    text-align: left;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 15px;
+    width: 100%;   
+    text-decoration: none;
+    color: black;
+    transition: all ease-in-out 300ms;
+}
+
+.chats-container .chats-conversations  .chat-conversation a:hover {
+    background-color: #13c0de24;
+}
+
+.sidebar-footer {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 20px auto;
+  }
+  
+.sidebar-footer a {
+    cursor: pointer;
+    text-decoration: none;
+    color: black;
+    width: 100%;
+  }
+  
+.sidebar-footer .sidebar-footer-el {
+    width: 100%;
+    padding: 12px 10px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: start;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 10px;
+  }
+  
+.sidebar-footer .sidebar-footer-el:hover {
+    background-color: rgba(103, 103, 103, 0.1);
+  }
+
+  /* Fondo negro transparente */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5); /* Fondo negro con transparencia */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  
+  /* Contenedor del modal */
+  .modal {
+    background: #fff; /* Fondo blanco */
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+    z-index: 1001;
+  }
+  
+  /* Título del modal */
+  .modal h2 {
+    font-size: 24px;
+    color: #333;
+  }
+  
+  /* Botones del modal */
+  .modal-actions {
+    display: flex;
+    justify-content: space-evenly;
+    margin-top: 20px;
+  }
+  
+  /* Botón de confirmación */
+  .confirm-btn {
+    background-color: #ff4d4f; 
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.3s ease;
+  }
+  
+  .confirm-btn:hover {
+    background-color: #e53e3e;
+  }
+  
+  /* Botón de cancelación */
+  .cancel-btn {
+    background-color: #ddd; 
+    color: #333;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.3s ease;
+  }
+  
+  .cancel-btn:hover {
+    background-color: #ccc;
+  }
+  

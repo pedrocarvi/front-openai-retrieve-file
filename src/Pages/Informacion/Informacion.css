@@ -1,0 +1,35 @@
+.inicio-bienvenida {
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.inicio-bienvenida p {
+    color: rgba(0, 0, 0, 0.6);
+    font-size: 15px;
+    line-height: 24px;
+    width: 90%;
+}
+.inicio-accesos {
+    margin-top: 20px;
+    width: 100%;
+}
+.inicio-accesos-list {
+    display: flex;
+    justify-content: start;
+    align-items: center;
+    gap: 20px;
+    margin-top: 20px;
+}
+.inicio-accesos-item {
+    min-width: 200px;
+    min-height: 200px;
+    padding: 20px;
+    border-radius: 20px;
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    align-items: center;
+    cursor: pointer;
+}

@@ -1,280 +1,122 @@
 import React, { useEffect, useState } from "react";
-import "./Chat.css";
-import { sendMessageToAssistant, fetchChats, startNewChat, deleteChat } from "../../services/api";
-import CodeBlock from "../CodeBlock/Codeblock";
-import { useNavigate } from "react-router-dom";
-import TrashIcon from '../../assets/trash.png';
-import LoaderAllScreen from "../LoaderAllScreen/LoaderAllScreen";
-import Loader from "../Loader/Loader";
+import { useParams } from "react-router-dom";
+import {
+  fetchChats,
+  deleteChat,
+} from "../../services/api";
 import VoiceInputChat from "../VoiceInput/VoiceInput";
 import VoiceAnimation from "../VoiceAnimation/VoiceAnimation";
+import PlayIcon from "../../assets/play.png";
+import StopIcon from "../../assets/stop.png";
+import "./Chat.css";
 
 const Chat = () => {
-  const navigate = useNavigate();
+  const { chatId } = useParams();
+
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [chatSessions, setChatSessions] = useState([]);
-  const [currentChat, setCurrentChat] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [loadingAllScreen, setLoadingAllScreen] = useState(false);
-  const [isToggled, setIsToggled] = useState(false);
+  const [isToggled, setIsToggled] = useState(false); // Guardar conversación
+  const [isToggledSinceridad, setIsToggledSinceridad] = useState(false);
 
-  // ******************************************************************************************
-  // Imprimo el chat seleccionado - Hay un problema que no toma bien el chat cuando se crea uno nuevo
-  // ******************************************************************************************
-  useEffect(() => {
-    if (currentChat) {
-      console.log("Chat actual seleccionado:", currentChat);
-    }
-  }, [currentChat]);
+  const [isConversationActive, setIsConversationActive] = useState(false);
+  const [hasEnded, setHasEnded] = useState(false);
 
-  // ******************************************************************************************
-  // Me traigo los chats pasados del usuario
-  // ******************************************************************************************
-  useEffect(() => {
-    const getChats = async () => {
-      setLoading(true);
-      try {
-        const chatsData = await fetchChats();
-        setChatSessions(chatsData.chats);
-        setLoading(false);
+  // -----------------------------------------------------------------------------
+  // Función para traer threads del backend y actualizar `messages`.
+  // -----------------------------------------------------------------------------
+  const loadChatFromBackend = async () => {
+    try {
+      const data = await fetchChats();
+      const allChats = data.chats || [];
+      const chatSelected = allChats.find((c) => c.id === parseInt(chatId));
 
-        if (chatsData.chats.length > 0) {
-          // Hace que el chat por defecto sea el mas nuevo
-          handleChatSelection(chatsData.chats[chatsData.chats.length - 1]);
-        }
-      } catch (error) {
-        console.error("Error fetching chats:", error);
-        setLoading(false);
-      }
-    };
-    getChats();
-  }, []);
-  
-  // ******************************************************************************************
-  // Selecciono chat pasado 
-  // ******************************************************************************************
-  const handleChatSelection = async (chat) => {
-    if (!chat) {
-      console.error("Selected chat is undefined or null");
-      return;
-    }
-  
-    setCurrentChat(chat);
-  
-    // Trae el thread / mensajes del chat
-    if (chat.threads && chat.threads.length > 0) {
-      const chatMessages = chat.threads.map((thread) => [
-        { type: "user", text: [{ type: "text", content: thread.userMessage }] },
-        { type: "ai", text: parseMessageContent(thread.assistantResponse) }
-      ]).flat();
-      setMessages(chatMessages);
-    } else {
-      // Si no trae los threads/mensajes, hace una nueva llamada x las dudas y sino deja la seccion de mensajes vacia.
-      try {
-        setLoading(true);
-        const chatsData = await fetchChats();
-        
-        // Find the specific chat that was selected
-        const updatedChat = chatsData.chats.find(c => c.id === chat.id);
-        
-        if (updatedChat && updatedChat.threads && updatedChat.threads.length > 0) {
-          const chatMessages = updatedChat.threads.map((thread) => [
-            { type: "user", text: [{ type: "text", content: thread.userMessage }] },
-            { type: "ai", text: parseMessageContent(thread.assistantResponse) }
-          ]).flat();
-          setMessages(chatMessages);
+      if (chatSelected) {
+        const { threads = [] } = chatSelected;
+
+        if (threads.length > 0) {
+          // Si ya hay threads, asumimos que la conversación finalizó.
+          setHasEnded(true);
+          setIsConversationActive(false);
         } else {
-          setMessages([]);
+          // No hay threads => nuevo chat (pre-conversación).
+          setHasEnded(false);
+          setIsConversationActive(false);
         }
-        
-        setLoading(false);
-      } catch (error) {
-        console.error("Error refetching chats:", error);
+
+        // Convertir threads -> messages para mostrarlos en la etapa final
+        const chatMessages = threads
+          .map((thread) => [
+            { type: "user", text: [{ content: thread.userMessage }] },
+            { type: "ai", text: [{ content: thread.assistantResponse }] },
+          ])
+          .flat();
+        setMessages(chatMessages);
+
+      } else {
+        // Si no existe el chat
         setMessages([]);
-        setLoading(false);
+        setHasEnded(false);
+        setIsConversationActive(false);
       }
-    }
-  };
-
-  // ******************************************************************************************
-  // Comienza un nuevo chat
-  // ******************************************************************************************
-  const handleStartNewChat = async () => {
-    setLoading(true);
-    try {
-      const newChat = await startNewChat();
-      setChatSessions((prevSessions) => [...prevSessions, newChat.newChat]);
+    } catch (error) {
+      console.error("Error fetching chat:", error);
       setMessages([]);
-      
-      setCurrentChat(newChat.newChat, () => {
-        console.log("Nuevo chat seleccionado:", newChat.newChat);
-      });
-  
-      setLoading(false); 
-    } catch (error) {
-      console.error("Error starting new chat:", error);
-      setLoading(false);
+      setHasEnded(false);
+      setIsConversationActive(false);
     }
   };
-  
-  // ******************************************************************************************
-  // Para las respuestas que tienen codigo, Transforma el texto en codigo - EN DESUSO
-  // ******************************************************************************************
-  function parseMessageContent(text) {
-    const regex = /```(\w+)?\n([\s\S]*?)```/g; 
-    const parts = [];
-    let lastIndex = 0;
-    let match;
 
-    while ((match = regex.exec(text)) !== null) {
-      // Captura el texto antes del bloque de código
-      if (match.index > lastIndex) {
-        parts.push({ type: 'text', content: text.slice(lastIndex, match.index) });
-      }
+  // -----------------------------------------------------------------------------
+  // Al montar o cambiar de chatId, traemos threads y decidimos si ya terminó.
+  // -----------------------------------------------------------------------------
+  useEffect(() => {
+    loadChatFromBackend();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatId]);
 
-      // Captura el bloque de código
-      parts.push({ type: 'code', content: match[2], language: match[1] || 'javascript' });
-      lastIndex = regex.lastIndex;
-    }
-
-    // Captura cualquier texto restante después del último bloque de código
-    if (lastIndex < text.length) {
-      parts.push({ type: 'text', content: text.slice(lastIndex) });
-    }
-
-    return parts;
-  }
-
-  // ******************************************************************************************
-  // Envia prompt en formato texto - EN DESUSO
-  // ******************************************************************************************
-  // const sendMessage = async () => {
-  //   if (inputValue.trim() === "" || !currentChat) {
-  //     console.error("No current chat or empty input value.");
-  //     return;
-  //   }
-  
-  //   setMessages([
-  //       ...messages,
-  //       { type: "user", text: [{ type: "text", content: inputValue }] },
-  //   ]);
-  //   setInputValue("");
-  //   setIsTyping(true);
-  
-  //   try {
-  //       const response = await sendMessageToAssistant(inputValue, currentChat.id, isToggled);
-  //       setMessages((prevMessages) => [
-  //           ...prevMessages,
-  //           { type: "ai", text: parseMessageContent(response.response) },
-  //       ]);
-  //       setIsTyping(false);
-  //   } catch (error) {
-  //       console.error("Error in sending message:", error);
-  //       setIsTyping(false);
-  //   }
-  // };
-
-  // ******************************************************************************************
-  // Envia prompt en audio y texto
-  // ******************************************************************************************
-  const sendMessage = async () => {
-    if (!currentChat || inputValue.trim() === "") return;
-  
-    setMessages([
-      ...messages,
-      { type: "user", text: [{ type: "text", content: inputValue }] },
-    ]);
-    setInputValue("");
-    setIsTyping(true);
-  
-    try {
-      const response = await sendMessageToAssistant(inputValue, currentChat.id, isToggled);
-      const aiResponse = response.response;  // La respuesta de la IA
-  
-      // Mostrar la respuesta en el chat
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        { type: "ai", text: parseMessageContent(aiResponse) },
-      ]);
-  
-      // Convertir la respuesta de la IA a audio usando ElevenLabs
-      // await speakTextWithElevenLabs(aiResponse);
-  
-      setIsTyping(false);
-    } catch (error) {
-      console.error("Error in sending message:", error);
-      setIsTyping(false);
-    }
-  };  
-  
-  // ******************************************************************************************
-  // Envia prompt al hacer enter - EN DESUSO
-  // ******************************************************************************************  
-  // const handleKeyDown = (event) => {
-  //   if (event.key === "Enter" && !event.shiftKey) {
-  //     event.preventDefault();
-  //     sendMessage(event);
-  //   }
-  // };
-
-  // ******************************************************************************************
-  // Manejo el audio que me llega del componente VoiceInputChat - capta y setea el valor del audio en texto
-  // ******************************************************************************************
-  const handleInputChange = (value) => {
-    // console.log("Valor actualizado:", value); 
-    setInputValue(value);
+  // -----------------------------------------------------------------------------
+  // INICIAR / FINALIZAR CONVERSACIÓN
+  // -----------------------------------------------------------------------------
+  const handleStartConversation = () => {
+    setIsConversationActive(true);
+    setHasEnded(false);
   };
 
-  // ******************************************************************************************
-  // Si el toggle esta activado, guardo el chat, sino no.
-  // ******************************************************************************************
-  const handleToggle = () => {
-    setIsToggled(!isToggled);
-  };
+  const handleEndConversation = async () => {
+    // Finaliza la conversación
+    setIsConversationActive(false);
+    setHasEnded(true);
 
-  // ******************************************************************************************
-  // Elimino un chat
-  // ******************************************************************************************  
-  const handleDelete = async (chatId) => {
-    if (chatId) {
-      setLoadingAllScreen(true)
+    if (!isToggled) {
+      console.log("Entra aca", isToggled)
+      // Si NO está activado "Guardar conversación", borramos el chat
       try {
-        await deleteChat(chatId); 
-        // Filtra el chat eliminado de la lista de chats
-        setChatSessions((prevChats) => prevChats.filter((chat) => chat.id !== chatId));
-
-        // Si el chat eliminado era el actual, limpia los mensajes
-        if (currentChat?.id === chatId) {
-          setCurrentChat(null);
-          setMessages([]);
-        }
-
-        setLoadingAllScreen(false);
+        await deleteChat(chatId);
       } catch (error) {
-        console.error("Error al eliminar conversación:", error);
-        setLoadingAllScreen(false);
+        console.error("Error deleting chat:", error);
       }
-    } else {
-      console.log("El chat no tenía ID válido");
-      setLoadingAllScreen(false);
     }
+    // Volvemos a consultar el estado del chat (por si se borró o guardó)
+    // await loadChatFromBackend();
   };
 
-  // ******************************************************************************************
+  // -----------------------------------------------------------------------------
   // Enviar mensaje y reproducir respuesta en audio
-  // ******************************************************************************************
+  // -----------------------------------------------------------------------------
   const sendMessageWithAudioStream = async () => {
-    if (!currentChat || inputValue.trim() === "") return;
-  
-    setMessages([
-      ...messages,
-      { type: "user", text: [{ type: "text", content: inputValue }] },
+    if (!chatId || inputValue.trim() === "") return;
+
+    // Añadimos mensaje del user (aunque no se muestre en "activo")
+    setMessages((prev) => [
+      ...prev,
+      { type: "user", text: [{ content: inputValue }] },
     ]);
+
+    const userQuestion = inputValue;
     setInputValue("");
     setIsTyping(true);
-  
+
     try {
       const response = await fetch("http://localhost:5001/chat/audio-eleven", {
         method: "POST",
@@ -283,32 +125,39 @@ const Chat = () => {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify({
-          question: inputValue,
-          chatId: currentChat.id,
+          question: userQuestion,
+          chatId: Number(chatId), // Convertimos a número
+          saveThread: isToggled,
         }),
       });
-  
+
       if (!response.body) {
         throw new Error("No se recibió respuesta del servidor.");
       }
-  
-      // Configuración de MediaSource para streaming de audio
+
+      // Leer el texto de la IA desde la cabecera
+      const aiText = response.headers.get("X-Text-Response");
+      if (aiText) {
+        setMessages((prev) => [
+          ...prev,
+          { type: "ai", text: [{ content: aiText }] },
+        ]);
+      }
+
+      // Streaming de audio
       const mediaSource = new MediaSource();
       const audio = new Audio();
       audio.src = URL.createObjectURL(mediaSource);
       audio.play();
-  
+
       mediaSource.addEventListener("sourceopen", async () => {
         const sourceBuffer = mediaSource.addSourceBuffer("audio/mpeg");
-  
         const reader = response.body.getReader();
         let done = false;
-  
-        // Agregar los chunks de audio al SourceBuffer
+
         while (!done) {
           const { value, done: readerDone } = await reader.read();
           if (value) {
-            // Esperar a que SourceBuffer termine de actualizar
             await new Promise((resolve) => {
               const onUpdateEnd = () => {
                 sourceBuffer.removeEventListener("updateend", onUpdateEnd);
@@ -320,125 +169,134 @@ const Chat = () => {
           }
           done = readerDone;
         }
-  
-        // Llamar a endOfStream después de que se hayan procesado todos los datos
+
         sourceBuffer.addEventListener("updateend", () => {
           if (mediaSource.readyState === "open") {
             mediaSource.endOfStream();
           }
         });
       });
-  
+
       setIsTyping(false);
     } catch (error) {
       console.error("Error en streaming de audio:", error);
       setIsTyping(false);
     }
   };
-  
-  // ******************************************************************************************
-  // Logout del usuario
-  // ****************************************************************************************** 
-  const handleLogout = () => {
-    setLoadingAllScreen(true);
-    localStorage.removeItem("token");
-    setLoadingAllScreen(false);
-    navigate("/");
+
+  // -----------------------------------------------------------------------------
+  // Toggles
+  // -----------------------------------------------------------------------------
+  const handleToggle = () => {
+    setIsToggled(!isToggled);
   };
 
-  // ******************************************************************************************
-  // FRONT
-  // ******************************************************************************************
-  return (
-    <div className="chat-container">
-      {loadingAllScreen ? <LoaderAllScreen/> : ''}
-      <div className="chat-sidebar">
-        <div className="logo-container">
-          <h1> numa. </h1>
-          {/* <img
-            src="https://www.soluciones-salud.com/wp-content/uploads/2023/07/avalian_logo-color.png.webp"
-            alt="Logo Avalian"
-            width={150}
-          />
-          <p style={{ textAlign: "center" }}> Generador de codigo: To-do list</p> */}
-        </div>
-        <div className="new-chat-container">
-          <button onClick={handleStartNewChat} className="new-chat-btn"> Nuevo chat </button>
-        </div>
-        <div className="chats-container">
-          <span> Chats anteriores </span>
-          {
-          loading ? 
-            <div className="chats-loader-ctn"> <Loader/> </div> :
-            <div className="chats-conversations">
-              {
-                chatSessions.slice().reverse().map(chat => (
-                  <div key={chat.id} className="chat-conversation">
-                    <button
-                      key={chat.id}
-                      onClick={() => handleChatSelection(chat)}
-                      className={currentChat && currentChat.id === chat.id ? 'active' : ''}
-                    >
-                      {chat.name}
-                    </button>
-                    <a onClick={() => handleDelete(chat.id)}>
-                      <img src={TrashIcon} alt="Icono delete" width={20} />
-                    </a>
-                </div>
-              ))
-            }
+  const handleToggleSinceridad = () => {
+    setIsToggledSinceridad(!isToggledSinceridad);
+  };
+
+  // -----------------------------------------------------------------------------
+  // Manejar input proveniente de VoiceInputChat
+  // -----------------------------------------------------------------------------
+  const handleInputChange = (value) => {
+    setInputValue(value);
+  };
+
+  // -----------------------------------------------------------------------------
+  // RENDER: 3 ETAPAS
+  // -----------------------------------------------------------------------------
+  // 1) PRE-CONVERSACIÓN: (!isConversationActive && !hasEnded)
+  // 2) CONVERSACIÓN ACTIVA: (isConversationActive && !hasEnded)
+  // 3) CONVERSACIÓN FINALIZADA: (!isConversationActive && hasEnded)
+
+  // 1) PRE-CONVERSACIÓN
+  if (!isConversationActive && !hasEnded) {
+    return (
+      <div className="chat-container pre-chat-container">
+        <button className="start-chat-btn" onClick={handleStartConversation}>
+          <img src={PlayIcon} alt="Play Icon" />
+          Comenzar conversación
+        </button>
+        <div className="toggles-container">
+          <div className="toggle-container">
+            <span className="toggle-label">Guardar conversación</span>
+            <div
+              className={`toggle-switch ${isToggled ? "active" : ""}`}
+              onClick={handleToggle}
+            >
+              <div className="toggle-knob" />
+            </div>
           </div>
-          }
-        </div>
-        <div className="sidebar-footer">
-          <div className="sidebar-footer-el">
-            <a> Dar feedback </a>
-          </div>
-          <div className="sidebar-footer-el">
-            <a onClick={handleLogout} > Cerrar sesión </a>
-          </div>
+
+          {/* <div className="toggle-container">
+            <span className="toggle-label">Sinceridad</span>
+            <div
+              className={`toggle-switch ${isToggledSinceridad ? "active" : ""}`}
+              onClick={handleToggleSinceridad}
+            >
+              <div className="toggle-knob" />
+            </div>
+          </div> */}
         </div>
       </div>
-      <div className="chat-area">
+    );
+  }
+
+  // 2) CONVERSACIÓN ACTIVA
+  if (isConversationActive && !hasEnded) {
+    return (
+      <div className="chat-container">
         <div className="chat-messages">
-          {/* {messages.map((message, index) => (
-            <div key={index} className={`message ${message.type === 'user' ? 'user-message' : 'ai-message'}`}>
+          <VoiceAnimation isActive={isTyping} />
+        </div>
+
+        <VoiceInputChat
+          setInputValue={handleInputChange}
+          sendMessage={sendMessageWithAudioStream}
+        />
+
+        <button className="end-chat-btn" onClick={handleEndConversation}>
+          <img src={StopIcon} alt="Stop icon" />
+          Finalizar conversación
+        </button>
+      </div>
+    );
+  }
+
+  // 3) CONVERSACIÓN FINALIZADA
+  return (
+    <div className="post-chat-container">
+      {messages.length === 0 ? (
+        <div className="chat-messages-not-saved">
+          <h2>Conversación finalizada</h2>
+          <p>No hay mensajes guardados.</p>
+          <button
+            onClick={() => (window.location.href = "/chats")}
+            className="go-back-btn"
+          >
+            Cerrar conversación
+          </button>
+        </div>
+      ) : (
+        <div className="chat-messages">
+          <h2>Conversación guardada </h2>
+          {messages.map((message, index) => (
+            <div
+              key={index}
+              className={`message ${message.type === "user" ? "user-message" : "ai-message"
+                }`}
+            >
               <div className="message-content">
-                {message.text.map((part, i) =>
-                  part.type === 'code' ? (
-                    <CodeBlock key={i} code={part.content} language={part.language} />
-                  ) : (
-                    <span key={i} style={{ whiteSpace: 'pre-wrap' }}>{part.content}</span>
-                  )
-                )}
+                {message.text.map((part, i) => (
+                  <span key={i} style={{ whiteSpace: "pre-wrap" }}>
+                    {part.content}
+                  </span>
+                ))}
               </div>
             </div>
-          ))} */}
-          <div className="chat-messages">
-            <VoiceAnimation isActive={isTyping} />
-          </div>
+          ))}
         </div>
-
-        <VoiceInputChat setInputValue={handleInputChange} sendMessage={sendMessageWithAudioStream} />
-
-        <div className="toggle-container">
-          <span className="toggle-label"> Guardar conversación </span>
-          <div  className={`toggle-switch ${isToggled ? 'active' : ''}`}  onClick={handleToggle}>
-            <div className="toggle-knob"></div>
-          </div>
-        </div>
-
-        {/* Como se enviaba la prompt en formato texto antes  */}
-        {/* <form onSubmit={sendMessage} className="chat-form">
-          <textarea
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Enviar un mensaje al asistente"
-          />
-          <button onClick={sendMessage} disabled={!currentChat}> Enviar </button>
-        </form> */}        
-      </div>
+      )}
     </div>
   );
 };

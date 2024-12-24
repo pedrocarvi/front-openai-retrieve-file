@@ -1,0 +1,19 @@
+/* ChatLayout.css */
+.chat-layout-container {
+    display: flex;
+    width: 100%;
+    height: 100vh; /* o el alto que prefieras */
+  }
+  
+  .chat-layout-main {
+    flex: 1;
+    background-color: #fefefe;
+    padding: 20px;
+    /* Ajusta estilos como quieras */
+  }  
+
+  .page-inicio {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+  }

@@ -23,7 +23,7 @@ const Login = () => {
             const response = await apiClient.post('/login', { email, password });
             localStorage.setItem('token', response.data.token);
             setLoadingAllScreen(false);
-            navigate('/chat');
+            navigate('/chats');
             setMessage('Inicio de sesión exitoso. Token almacenado.');
         } catch (error) {
             setMessage(error.response?.data?.error || 'Error al iniciar sesión');
