@@ -7,7 +7,7 @@ import TrashIcon from '../../assets/trash.png';
 import LoaderAllScreen from "../LoaderAllScreen/LoaderAllScreen";
 import Loader from "../Loader/Loader";
 import VoiceInputChat from "../VoiceInput/VoiceInput";
-import { ElevenLabsClient } from "elevenlabs";
+import VoiceAnimation from "../VoiceAnimation/VoiceAnimation";
 
 const Chat = () => {
   const navigate = useNavigate();
@@ -21,57 +21,13 @@ const Chat = () => {
   const [isToggled, setIsToggled] = useState(false);
 
   // ******************************************************************************************
-  // Tranformo response de la api de openAI de texto a speech con ElevenLabs (falta trabajarlo)
-  // ******************************************************************************************
-  // const speakTextWithElevenLabs = async (text) => {
-  //  const client = new ElevenLabsClient({ apiKey: "" });
-  //   try {
-  //     const audioResponse = await client.textToSpeech.convert("JBFqnCBsd6RMkjVDRZzb", {
-  //       output_format: "mp3_44100_128",  // Formato de salida
-  //       text: text,  // El texto que quieres convertir en voz
-  //       model_id: "eleven_multilingual_v2",  // Modelo que deseas usar
-  //     });
-
-  //     // Verifica si audioResponse tiene un ReadableStream
-  //     if (audioResponse.readableStream) {
-  //       const reader = audioResponse.readableStream.getReader();
-  //       const chunks = [];
-
-  //       // Lee el flujo y almacena los fragmentos
-  //       let done, value;
-  //       while ({ done, value } = await reader.read()) {
-  //         if (done) break;
-  //         chunks.push(value);
-  //       }
-
-  //       // Combina los fragmentos en un solo Uint8Array
-  //       const audioBuffer = new Uint8Array(chunks.flat());
-
-  //       // Crea un Blob con el tipo adecuado
-  //       const audioBlob = new Blob([audioBuffer], { type: "audio/mp3" });
-
-  //       // Crea una URL de objeto para poder reproducir el audio
-  //       const audioUrl = URL.createObjectURL(audioBlob);
-
-  //       // Crear un elemento de audio y reproducirlo
-  //       const audio = new Audio(audioUrl);
-  //       audio.play();
-  //     } else {
-  //       console.error("No se recibió un flujo de audio en la respuesta de ElevenLabs.");
-  //     }
-  //   } catch (error) {
-  //     console.error("Error al convertir el texto a voz:", error);
-  //   }
-  // };
-
-  // ******************************************************************************************
   // Imprimo el chat seleccionado - Hay un problema que no toma bien el chat cuando se crea uno nuevo
   // ******************************************************************************************
-  // useEffect(() => {
-  //   if (currentChat) {
-  //     console.log("Chat actual seleccionado:", currentChat);
-  //   }
-  // }, [currentChat]);
+  useEffect(() => {
+    if (currentChat) {
+      console.log("Chat actual seleccionado:", currentChat);
+    }
+  }, [currentChat]);
 
   // ******************************************************************************************
   // Me traigo los chats pasados del usuario
@@ -320,7 +276,7 @@ const Chat = () => {
     setIsTyping(true);
   
     try {
-      const response = await fetch("http://localhost:5001/chat/audio", {
+      const response = await fetch("http://localhost:5001/chat/audio-eleven", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -398,12 +354,13 @@ const Chat = () => {
       {loadingAllScreen ? <LoaderAllScreen/> : ''}
       <div className="chat-sidebar">
         <div className="logo-container">
-          <img
+          <h1> numa. </h1>
+          {/* <img
             src="https://www.soluciones-salud.com/wp-content/uploads/2023/07/avalian_logo-color.png.webp"
             alt="Logo Avalian"
             width={150}
           />
-          <p style={{ textAlign: "center" }}> Generador de codigo: To-do list</p>
+          <p style={{ textAlign: "center" }}> Generador de codigo: To-do list</p> */}
         </div>
         <div className="new-chat-container">
           <button onClick={handleStartNewChat} className="new-chat-btn"> Nuevo chat </button>
@@ -433,13 +390,18 @@ const Chat = () => {
           </div>
           }
         </div>
-        <div style={{ marginTop: "20px" }} className="logout-a">
-          <a onClick={handleLogout} style={{ cursor: "pointer" }}> Cerrar sesión </a>
+        <div className="sidebar-footer">
+          <div className="sidebar-footer-el">
+            <a> Dar feedback </a>
+          </div>
+          <div className="sidebar-footer-el">
+            <a onClick={handleLogout} > Cerrar sesión </a>
+          </div>
         </div>
       </div>
       <div className="chat-area">
         <div className="chat-messages">
-          {messages.map((message, index) => (
+          {/* {messages.map((message, index) => (
             <div key={index} className={`message ${message.type === 'user' ? 'user-message' : 'ai-message'}`}>
               <div className="message-content">
                 {message.text.map((part, i) =>
@@ -451,13 +413,13 @@ const Chat = () => {
                 )}
               </div>
             </div>
-          ))}
-          {isTyping && (
-            <div className="message ai-message typing">
-              <span className="typing-indicator">Escribiendo...</span>
-            </div>
-          )}
+          ))} */}
+          <div className="chat-messages">
+            <VoiceAnimation isActive={isTyping} />
+          </div>
         </div>
+
+        <VoiceInputChat setInputValue={handleInputChange} sendMessage={sendMessageWithAudioStream} />
 
         <div className="toggle-container">
           <span className="toggle-label"> Guardar conversación </span>
@@ -466,7 +428,7 @@ const Chat = () => {
           </div>
         </div>
 
-        {/* Como se enviaba la prompt en fprmato texto antes  */}
+        {/* Como se enviaba la prompt en formato texto antes  */}
         {/* <form onSubmit={sendMessage} className="chat-form">
           <textarea
             value={inputValue}
@@ -475,10 +437,7 @@ const Chat = () => {
             placeholder="Enviar un mensaje al asistente"
           />
           <button onClick={sendMessage} disabled={!currentChat}> Enviar </button>
-        </form> */}
-
-        <VoiceInputChat setInputValue={handleInputChange} sendMessage={sendMessageWithAudioStream} />
-        
+        </form> */}        
       </div>
     </div>
   );

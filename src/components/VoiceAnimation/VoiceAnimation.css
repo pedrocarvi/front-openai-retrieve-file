@@ -1,0 +1,23 @@
+@keyframes ripple {
+    0% {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+    }
+    100% {
+      transform: translate(-50%, -50%) scale(2);
+      opacity: 0;
+    }
+  }
+  
+  @layer utilities {
+    .animate-ripple {
+      animation: ripple 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    
+    .animate-ripple-delayed {
+      animation: ripple 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      animation-delay: 1s;
+    }
+  }
+  
+  

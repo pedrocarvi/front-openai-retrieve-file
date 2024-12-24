@@ -4,6 +4,7 @@ import './voiceInput.css';
 const VoiceInputChat = ({ setInputValue, sendMessage }) => {
     const [isListening, setIsListening] = useState(false);
     const recognitionRef = useRef(null);
+    const transcriptRef = useRef(""); 
 
     const startListening = () => {
         if (isListening) return;
@@ -26,17 +27,15 @@ const VoiceInputChat = ({ setInputValue, sendMessage }) => {
             const transcript = Array.from(event.results)
                 .map((result) => result[0].transcript)
                 .join("");
+            transcriptRef.current = transcript; 
             setInputValue(transcript);
-            // console.log("Texto reconocido:", transcript)
         };
 
         recognitionRef.current.onend = () => {
             setIsListening(false);
             console.log("Reconocimiento de voz terminado.");
-            // Llama a sendMessage cuando se detiene el reconocimiento
-            sendMessage();
         };
-        
+
         recognitionRef.current.onerror = (event) => {
             console.error("Speech recognition error:", event.error);
             alert("Error en el reconocimiento de voz: " + event.error);
@@ -48,6 +47,12 @@ const VoiceInputChat = ({ setInputValue, sendMessage }) => {
         if (!recognitionRef.current) return;
         recognitionRef.current.stop();
         setIsListening(false);
+
+        if (transcriptRef.current.trim() !== "") {
+            sendMessage();
+        } else {
+            console.log("No hay texto para enviar.");
+        }
     };
 
     return (
