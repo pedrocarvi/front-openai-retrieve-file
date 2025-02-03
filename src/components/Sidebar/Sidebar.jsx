@@ -80,7 +80,7 @@ const Sidebar = () => {
 
       <div className="logo-container">
         <Link to="/chats">
-          <h1>numa.</h1>
+          <h1> Ayla </h1>
         </Link>
       </div>
 
